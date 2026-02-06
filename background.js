@@ -66,27 +66,60 @@ function log(message, level = 'info') {
 }
 
 /**
- * 清除 Windsurf 相关的所有 cookies
+ * 清除 Windsurf 相关的所有 cookies 和 storage
  */
 async function clearWindsurfCookies() {
+    // 清除 cookies - 用 URL 模式获取所有相关 cookies
+    const urls = [
+        'https://windsurf.com',
+        'https://www.windsurf.com',
+        'https://accounts.windsurf.com',
+        'https://codeium.com',
+        'https://www.codeium.com'
+    ];
     const domains = ['windsurf.com', '.windsurf.com', 'codeium.com', '.codeium.com'];
     let cleared = 0;
 
+    // 通过 domain 获取并删除
     for (const domain of domains) {
         try {
             const cookies = await chrome.cookies.getAll({ domain });
             for (const cookie of cookies) {
-                const protocol = cookie.secure ? 'https' : 'http';
-                const url = `${protocol}://${cookie.domain}${cookie.path}`;
+                const url = `https://${cookie.domain.replace(/^\./, '')}${cookie.path}`;
                 await chrome.cookies.remove({ url, name: cookie.name });
                 cleared++;
             }
-        } catch (e) {
-            // 忽略错误
-        }
+        } catch (e) {}
     }
 
-    log(`已清除 ${cleared} 个 cookies`);
+    // 通过 URL 再获取一次确保清除干净
+    for (const url of urls) {
+        try {
+            const cookies = await chrome.cookies.getAll({ url });
+            for (const cookie of cookies) {
+                await chrome.cookies.remove({ url, name: cookie.name });
+                cleared++;
+            }
+        } catch (e) {}
+    }
+
+    // 清除 localStorage 和 sessionStorage
+    try {
+        const tabs = await chrome.tabs.query({ url: ['https://windsurf.com/*', 'https://codeium.com/*'] });
+        for (const tab of tabs) {
+            try {
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: () => {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                    }
+                });
+            } catch (e) {}
+        }
+    } catch (e) {}
+
+    log(`已清除 ${cleared} 个 cookies 及相关 storage`);
 }
 
 async function startRegistration(accounts, concurrency) {
