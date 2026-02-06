@@ -286,6 +286,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             break;
 
+        case 'CLEAR_STATE':
+            registrationState.accounts = [];
+            registrationState.isRunning = false;
+            registrationState.activeTabs.clear();
+            chrome.storage.session.remove('registrationState').catch(() => {});
+            log('状态已清空');
+            sendResponse({ success: true });
+            break;
+
         case 'FORM_FILLED':
             if (email) {
                 log(`${email}: 表单已填写，等待继续...`);

@@ -18,7 +18,8 @@ const elements = {
     successCard: null,
     successAccounts: null,
     copySuccessBtn: null,
-    copyTip: null
+    copyTip: null,
+    clearBtn: null
 };
 
 // 注册状态
@@ -51,6 +52,7 @@ function init() {
     elements.successAccounts = document.getElementById('successAccounts');
     elements.copySuccessBtn = document.getElementById('copySuccessBtn');
     elements.copyTip = document.getElementById('copyTip');
+    elements.clearBtn = document.getElementById('clearBtn');
 
     // 绑定事件
     elements.accountsInput.addEventListener('input', onAccountsInputChange);
@@ -58,6 +60,7 @@ function init() {
     elements.stopBtn.addEventListener('click', stopRegistration);
     elements.clearLogBtn.addEventListener('click', clearLog);
     elements.copySuccessBtn.addEventListener('click', copySuccessAccounts);
+    elements.clearBtn.addEventListener('click', clearAllRecords);
 
     // 监听来自 background 的消息
     chrome.runtime.onMessage.addListener(handleBackgroundMessage);
@@ -431,6 +434,43 @@ async function restoreState() {
     } catch (error) {
         console.log('[Popup] 从 storage.session 恢复状态失败:', error);
     }
+}
+
+/**
+ * 清空所有记录
+ */
+async function clearAllRecords() {
+    // 停止运行中的任务
+    if (registrationState.isRunning) {
+        try {
+            await chrome.runtime.sendMessage({ type: 'STOP_REGISTRATION' });
+        } catch (e) {}
+    }
+
+    // 清空本地状态
+    registrationState.accounts = [];
+    registrationState.isRunning = false;
+    registrationState.stats = { success: 0, pending: 0, error: 0 };
+
+    // 清空持久化状态
+    try {
+        await chrome.storage.session.remove('registrationState');
+    } catch (e) {}
+
+    // 通知 background 清空
+    try {
+        await chrome.runtime.sendMessage({ type: 'CLEAR_STATE' });
+    } catch (e) {}
+
+    // 重置 UI
+    resetUI();
+    elements.accountsInput.value = '';
+    elements.accountCount.textContent = '0';
+    renderStatusList();
+    updateStats();
+    updateSuccessAccounts();
+    elements.logContainer.innerHTML = '';
+    addLog('记录已清空', 'info');
 }
 
 // 页面加载完成后初始化
