@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windsurf 批量注册</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🌊 Windsurf 批量注册</h1>
+            <p class="subtitle">支持多账号并行注册</p>
+        </header>
+
+        <section class="card">
+            <div class="card-header">
+                <span class="icon">📝</span>
+                <h2>输入账号密码</h2>
+            </div>
+            <div class="card-body">
+                <p class="hint">每行一个，格式：<code>邮箱  密码</code>（空格或Tab分隔）</p>
+                <textarea id="accountsInput" placeholder="example1@qq.com  password123
+example2@qq.com  password456
+example3@qq.com  password789"></textarea>
+                <div class="account-count">
+                    已解析 <span id="accountCount">0</span> 个账号
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <span class="icon">⚙️</span>
+                <h2>注册设置</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <label>模式：串行注册（逐个处理，自动清除 cookies）</label>
+                </div>
+            </div>
+        </section>
+
+        <section class="actions">
+            <button id="startBtn" class="btn btn-primary">
+                <span class="btn-icon">🚀</span>
+                <span>开始批量注册</span>
+            </button>
+            <button id="stopBtn" class="btn btn-danger" disabled>
+                <span class="btn-icon">⏹️</span>
+                <span>停止</span>
+            </button>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <span class="icon">📊</span>
+                <h2>注册状态</h2>
+                <div class="stats">
+                    <span class="stat success" title="成功">✅ <span id="successCount">0</span></span>
+                    <span class="stat pending" title="进行中">⏳ <span id="pendingCount">0</span></span>
+                    <span class="stat error" title="失败">❌ <span id="errorCount">0</span></span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="statusList" class="status-list">
+                    <div class="empty-state">暂无注册任务</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" id="successCard" style="display: none;">
+            <div class="card-header">
+                <span class="icon">✅</span>
+                <h2>注册成功的账号</h2>
+                <button id="copySuccessBtn" class="btn-small" title="一键复制">📋 复制</button>
+            </div>
+            <div class="card-body">
+                <textarea id="successAccounts" readonly placeholder="注册成功的账号将显示在这里..."></textarea>
+                <div id="copyTip" class="copy-tip" style="display: none;">✅ 已复制到剪贴板</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <span class="icon">📋</span>
+                <h2>运行日志</h2>
+                <button id="clearLogBtn" class="btn-small" title="清空日志">🗑️</button>
+            </div>
+            <div class="card-body">
+                <div id="logContainer" class="log-container"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

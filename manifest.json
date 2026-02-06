@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Windsurf 批量注册工具",
+  "version": "1.0.0",
+  "description": "批量注册 Windsurf 账号，串行逐个注册",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://windsurf.com/*",
+    "https://codeium.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Windsurf 批量注册",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://windsurf.com/*",
+        "https://codeium.com/*"
+      ],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
