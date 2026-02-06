@@ -8,7 +8,8 @@
     "tabs",
     "activeTab",
     "scripting",
-    "cookies"
+    "cookies",
+    "browsingData"
   ],
   "host_permissions": [
     "https://windsurf.com/*",

@@ -66,21 +66,32 @@ function log(message, level = 'info') {
 }
 
 /**
- * 清除 Windsurf 相关的所有 cookies 和 storage
+ * 在指定标签页中清除 localStorage 和 sessionStorage（必须在关闭标签页之前调用）
+ */
+async function clearTabStorage(tabId) {
+    try {
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => {
+                try { localStorage.clear(); } catch(e) {}
+                try { sessionStorage.clear(); } catch(e) {}
+                console.log('[Content Script] localStorage/sessionStorage 已清除');
+            }
+        });
+        log('已清除标签页 localStorage/sessionStorage');
+    } catch (e) {
+        log('清除标签页 storage 失败: ' + e.message, 'warning');
+    }
+}
+
+/**
+ * 清除 Windsurf 相关的所有 cookies
  */
 async function clearWindsurfCookies() {
-    // 清除 cookies - 用 URL 模式获取所有相关 cookies
-    const urls = [
-        'https://windsurf.com',
-        'https://www.windsurf.com',
-        'https://accounts.windsurf.com',
-        'https://codeium.com',
-        'https://www.codeium.com'
-    ];
     const domains = ['windsurf.com', '.windsurf.com', 'codeium.com', '.codeium.com'];
     let cleared = 0;
 
-    // 通过 domain 获取并删除
+    // 通过 domain 获取并删除所有 cookies
     for (const domain of domains) {
         try {
             const cookies = await chrome.cookies.getAll({ domain });
@@ -92,34 +103,24 @@ async function clearWindsurfCookies() {
         } catch (e) {}
     }
 
-    // 通过 URL 再获取一次确保清除干净
-    for (const url of urls) {
-        try {
-            const cookies = await chrome.cookies.getAll({ url });
-            for (const cookie of cookies) {
-                await chrome.cookies.remove({ url, name: cookie.name });
-                cleared++;
+    // 使用 browsingData API 清除 windsurf.com 的所有浏览数据
+    try {
+        await chrome.browsingData.remove(
+            { origins: ['https://windsurf.com', 'https://codeium.com'] },
+            {
+                cookies: true,
+                localStorage: true,
+                sessionStorage: true,
+                cacheStorage: true,
+                indexedDB: true
             }
-        } catch (e) {}
+        );
+        log('已通过 browsingData API 清除所有浏览数据');
+    } catch (e) {
+        log('browsingData 清除失败: ' + e.message, 'warning');
     }
 
-    // 清除 localStorage 和 sessionStorage
-    try {
-        const tabs = await chrome.tabs.query({ url: ['https://windsurf.com/*', 'https://codeium.com/*'] });
-        for (const tab of tabs) {
-            try {
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    func: () => {
-                        localStorage.clear();
-                        sessionStorage.clear();
-                    }
-                });
-            } catch (e) {}
-        }
-    } catch (e) {}
-
-    log(`已清除 ${cleared} 个 cookies 及相关 storage`);
+    log(`已清除 ${cleared} 个 cookies`);
 }
 
 async function startRegistration(accounts, concurrency) {
@@ -349,8 +350,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 log(`${email}: 注册成功!`, 'success');
                 updateAccountStatus(email, 'success', '注册成功');
                 registrationState.activeTabs.delete(tabId);
-                // 关闭标签页 → 清除 cookies → 处理下一个
+                // 先清 storage → 关闭标签页 → 清除 cookies → 处理下一个
                 (async () => {
+                    await clearTabStorage(tabId);
                     try { await chrome.tabs.remove(tabId); } catch(e) {}
                     await clearWindsurfCookies();
                     setTimeout(() => processNextAccount(), 1500);
@@ -365,8 +367,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 log(`${email}: 注册失败 - ${errorMsg}`, 'error');
                 updateAccountStatus(email, 'error', errorMsg);
                 registrationState.activeTabs.delete(tabId);
-                // 关闭标签页 → 清除 cookies → 处理下一个
+                // 先清 storage → 关闭标签页 → 清除 cookies → 处理下一个
                 (async () => {
+                    await clearTabStorage(tabId);
                     try { await chrome.tabs.remove(tabId); } catch(e) {}
                     await clearWindsurfCookies();
                     setTimeout(() => processNextAccount(), 1500);
@@ -433,8 +436,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             log(`${email}: 检测到成功跳转 -> ${url}`, 'success');
             updateAccountStatus(email, 'success', '注册成功');
             registrationState.activeTabs.delete(tabId);
-            // 关闭标签页 → 清除 cookies → 处理下一个
+            // 先清 storage → 关闭标签页 → 清除 cookies → 处理下一个
             (async () => {
+                await clearTabStorage(tabId);
                 try { await chrome.tabs.remove(tabId); } catch(e) {}
                 await clearWindsurfCookies();
                 setTimeout(() => processNextAccount(), 1500);
