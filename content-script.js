@@ -276,36 +276,21 @@ async function fillRegistrationForm() {
     }));
 
     // 等待页面稳定
-    await delay(1000);
+    await delay(500);
 
-    // 填写邮箱
+    // 并行填写所有输入框（邮箱、名、姓同时填写）
     const emailSelectors = [
         'input[type="email"]',
         'input[name*="email" i]',
         'input[id*="email" i]',
         'input[placeholder*="email" i]'
     ];
-    const emailFilled = await findAndFillInput(emailSelectors, registrationData.email, '邮箱');
-
-    if (!emailFilled) {
-        sendMessage('REGISTRATION_ERROR', { error: '找不到邮箱输入框' });
-        return;
-    }
-
-    await delay(300);
-
-    // 填写名字
     const firstNameSelectors = [
         'input[name*="first" i]',
         'input[id*="first" i]',
         'input[placeholder*="first" i]',
         'input[name*="given" i]'
     ];
-    await findAndFillInput(firstNameSelectors, registrationData.firstName, '名');
-
-    await delay(300);
-
-    // 填写姓氏
     const lastNameSelectors = [
         'input[name*="last" i]',
         'input[id*="last" i]',
@@ -313,12 +298,21 @@ async function fillRegistrationForm() {
         'input[name*="family" i]',
         'input[name*="surname" i]'
     ];
-    await findAndFillInput(lastNameSelectors, registrationData.lastName, '姓');
 
-    await delay(500);
+    const [emailFilled] = await Promise.all([
+        findAndFillInput(emailSelectors, registrationData.email, '邮箱'),
+        findAndFillInput(firstNameSelectors, registrationData.firstName, '名'),
+        findAndFillInput(lastNameSelectors, registrationData.lastName, '姓')
+    ]);
+
+    if (!emailFilled) {
+        sendMessage('REGISTRATION_ERROR', { error: '找不到邮箱输入框' });
+        return;
+    }
+
+    await delay(200);
 
     // 勾选同意条款复选框
-    await delay(300);
     const tosCheckbox = document.querySelector('input#terms, input[name="agreeTOS"], input[type="checkbox"][name*="agree" i], input[type="checkbox"][id*="terms" i]');
     if (tosCheckbox) {
         if (!tosCheckbox.checked) {

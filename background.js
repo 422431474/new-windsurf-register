@@ -85,42 +85,48 @@ async function clearTabStorage(tabId) {
 }
 
 /**
- * 清除 Windsurf 相关的所有 cookies
+ * 清除 Windsurf 相关的所有 cookies 和浏览数据
  */
 async function clearWindsurfCookies() {
-    const domains = ['windsurf.com', '.windsurf.com', 'codeium.com', '.codeium.com'];
     let cleared = 0;
 
-    // 通过 domain 获取并删除所有 cookies
-    for (const domain of domains) {
-        try {
-            const cookies = await chrome.cookies.getAll({ domain });
-            for (const cookie of cookies) {
-                const url = `https://${cookie.domain.replace(/^\./, '')}${cookie.path}`;
-                await chrome.cookies.remove({ url, name: cookie.name });
-                cleared++;
+    // 方法1：获取所有 cookies，过滤 windsurf/codeium 相关的并删除
+    try {
+        const allCookies = await chrome.cookies.getAll({});
+        for (const cookie of allCookies) {
+            const domain = cookie.domain.toLowerCase();
+            if (domain.includes('windsurf') || domain.includes('codeium')) {
+                const protocol = cookie.secure ? 'https' : 'http';
+                const cleanDomain = cookie.domain.replace(/^\./, '');
+                const url = `${protocol}://${cleanDomain}${cookie.path}`;
+                try {
+                    await chrome.cookies.remove({ url, name: cookie.name });
+                    cleared++;
+                } catch (e) {}
             }
-        } catch (e) {}
+        }
+    } catch (e) {
+        log('cookies.getAll 失败: ' + e.message, 'warning');
     }
 
-    // 使用 browsingData API 清除 windsurf.com 的所有浏览数据
+    // 方法2：browsingData API 彻底清除指定源的所有数据
     try {
         await chrome.browsingData.remove(
             { origins: ['https://windsurf.com', 'https://codeium.com'] },
-            {
-                cookies: true,
-                localStorage: true,
-                sessionStorage: true,
-                cacheStorage: true,
-                indexedDB: true
-            }
+            { cookies: true, localStorage: true, cacheStorage: true, indexedDB: true }
         );
-        log('已通过 browsingData API 清除所有浏览数据');
-    } catch (e) {
-        log('browsingData 清除失败: ' + e.message, 'warning');
+    } catch (e) {}
+
+    // 方法3：不指定 origins，按时间清除最近的 cookies（兜底）
+    if (cleared === 0) {
+        try {
+            await chrome.browsingData.removeCookies(
+                { origins: ['https://windsurf.com', 'https://codeium.com'] }
+            );
+        } catch (e) {}
     }
 
-    log(`已清除 ${cleared} 个 cookies`);
+    log(`已清除 ${cleared} 个 cookies 及浏览数据`);
 }
 
 async function startRegistration(accounts, concurrency) {
