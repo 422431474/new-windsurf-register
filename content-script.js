@@ -539,6 +539,32 @@ async function handleCaptchaPage() {
     console.log('[Content Script] 检测到人机验证页面');
     sendMessage('NEED_CAPTCHA', { message: '请完成人机验证' });
 
+    // 尝试自动点击 Turnstile 复选框（可能因跨域限制不生效）
+    await delay(1500);
+    try {
+        const turnstileIframe = document.querySelector('iframe[src*="challenges.cloudflare.com"], iframe[src*="turnstile"]');
+        if (turnstileIframe) {
+            console.log('[Content Script] 尝试自动点击 Turnstile iframe...');
+            turnstileIframe.focus();
+            turnstileIframe.click();
+            // 也尝试点击 Turnstile 容器
+            const container = turnstileIframe.parentElement;
+            if (container) {
+                container.click();
+            }
+            // 尝试模拟鼠标事件
+            const rect = turnstileIframe.getBoundingClientRect();
+            const clickX = rect.left + 30; // 复选框大概在左侧30px处
+            const clickY = rect.top + rect.height / 2;
+            turnstileIframe.dispatchEvent(new MouseEvent('click', {
+                bubbles: true, clientX: clickX, clientY: clickY
+            }));
+            console.log('[Content Script] Turnstile 自动点击已尝试');
+        }
+    } catch (e) {
+        console.log('[Content Script] Turnstile 自动点击失败:', e.message);
+    }
+
     // 轮询检测验证完成或 Continue 按钮可用
     const maxWait = 120000;
     const interval = 1000;
