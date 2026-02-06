@@ -427,7 +427,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     console.log(`[Background] 标签页 URL 变化: ${email} -> ${url}`);
 
     // 检测成功跳转（注册成功后通常跳转到 /download 或 /dashboard 等）
-    const successPaths = ['/download', '/dashboard', '/home', '/welcome', '/editor'];
+    const successPaths = ['/download', '/dashboard', '/home', '/welcome', '/editor', '/profile', '/account/profile'];
     const isSuccess = successPaths.some(p => url.includes(p));
 
     if (isSuccess) {

@@ -250,7 +250,8 @@ function isSuccessPage() {
         location.pathname.includes('/home') ||
         location.pathname.includes('/welcome') ||
         location.pathname.includes('/download') ||
-        location.pathname.includes('/editor')) {
+        location.pathname.includes('/editor') ||
+        location.pathname.includes('/profile')) {
         return true;
     }
 
