@@ -162,7 +162,12 @@ async function processNextAccount() {
     }
 
     const activeCount = registrationState.activeTabs.size;
-    log(`开始处理: ${account.email} (当前活动: ${activeCount}/${registrationState.concurrency})`);
+    log(`开始处理: ${account.email}`);
+    updateAccountStatus(account.email, 'running', '正在清除旧数据...');
+
+    // 每次开新标签前先彻底清除所有浏览数据
+    await clearWindsurfCookies();
+    log(`${account.email}: 旧数据已清除，打开注册页面...`);
     updateAccountStatus(account.email, 'running', '正在打开页面...');
 
     try {
