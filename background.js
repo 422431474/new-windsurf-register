@@ -75,10 +75,17 @@ async function clearTabStorage(tabId) {
             func: () => {
                 try { localStorage.clear(); } catch(e) {}
                 try { sessionStorage.clear(); } catch(e) {}
-                console.log('[Content Script] localStorage/sessionStorage 已清除');
+                // 清除 Firebase Auth 的 IndexedDB（登录态关键存储）
+                try {
+                    const req = indexedDB.deleteDatabase('firebaseLocalStorageDb');
+                    req.onsuccess = () => console.log('[Content Script] firebaseLocalStorageDb 已删除');
+                    req.onerror = () => console.log('[Content Script] firebaseLocalStorageDb 删除失败');
+                } catch(e) {}
+                try { indexedDB.deleteDatabase('firebase-heartbeat-database'); } catch(e) {}
+                console.log('[Content Script] localStorage/sessionStorage/IndexedDB 已清除');
             }
         });
-        log('已清除标签页 localStorage/sessionStorage');
+        log('已清除标签页 storage + Firebase IndexedDB');
     } catch (e) {
         log('清除标签页 storage 失败: ' + e.message, 'warning');
     }
@@ -189,7 +196,14 @@ async function processNextAccount() {
         // 等待页面加载完成
         log(`${account.email}: 等待页面加载...`);
         await waitForTabLoad(tab.id);
-        log(`${account.email}: 页面加载完成，准备发送数据`);
+
+        // 清除 Firebase IndexedDB（登录态关键存储）然后刷新页面
+        log(`${account.email}: 清除 Firebase IndexedDB...`);
+        await clearTabStorage(tab.id);
+        // 刷新页面使清除生效
+        await chrome.tabs.reload(tab.id);
+        await waitForTabLoad(tab.id);
+        log(`${account.email}: 页面已刷新，准备发送数据`);
 
         // 发送注册数据给 content script
         const names = generateRandomName();
